@@ -1,6 +1,7 @@
 #include <errno.h>
+#include <ctime>
 #include "server.hpp"
-
+#include "Message.hpp"
 
 Server::Server(std::string serverPass, int port): _pass(serverPass), _port(port)
 {
@@ -20,13 +21,86 @@ std::string	Server::getPass() const {
 	return (this->_pass);
 }
 
-void Server::createServer(void)
+// void Server::createServer(void)
+
+User*	Server::findByFd(int clientFd) {
+	std::vector<User*>::iterator itr;
+	for (itr=begin(this->_userList); itr != end(this->_userList); ++itr) {
+		if (clientFd == *(*itr)->getFd())
+			return (*itr);
+	}
+	std::cerr << "User FD not found" << std::endl;
+	return (NULL);
+}
+
+User*	Server::findByNick(std::string nick) {
+	std::vector<User*>::iterator itr;
+	for (itr=begin(this->_userList); itr != end(this->_userList); ++itr) {
+		if (nick == *(*itr)->getNick())
+			return (*itr);
+	}
+	std::cerr << "User nickname not found" << std::endl;
+	return (NULL);
+}
+
+Channel*	Server::findChannel(std::string name) {
+	std::vector<Channel*>::iterator itr;
+	for (itr=begin(this->_channelList); itr != end(this->_channelList); ++itr) {
+		if (name == *(*itr)->getName())
+			return (*itr);
+	}
+	std::cerr << "Channel not found by name" << std::endl;
+	return (NULL);
+}
+
+/* Check if the User is already in the Server Object's User List */
+int	Server::isUserInServer(char* host) {
+	for (std::vector<User *>::iterator it = this->_userList.begin(); it != this->_userList.end(); ++it)
+	{
+		if ((*(*it)).getHost() == &host)
+			return (1);
+	}
+	return (0);
+}
+
+void	Server::reconnectUser(pollfd &client, char* host, char* service) {
+	User* foundUser;
+	for (std::vector<User *>::iterator it = this->_userList.begin(); it != this->_userList.end(); ++it)
+	{
+		if ((*(*it)).getHost() == &host)
+			*foundUser = *(*it);
+			foundUser->setClient(client);
+			foundUser->setHost(host);
+			foundUser->setService(service);
+	}
+}
+
+bool	Server::authUser(User* activeUser) {
+	if (activeUser->pwCheck() == false)
+		return false;
+	if (!activeUser->getNick()->c_str())
+		return false;
+	if (!activeUser->getUsername()->c_str())
+		return false;
+	else
+		return true;
+}
+
+void	Server::kickUser(User* toBeKicked) {
+	//close fd? 
+	// delete toBeKicked;
+}
+
+
+
+
+int Server::createServer(void)
 {
 	int listening = socket(AF_INET, SOCK_STREAM, 0);
 	if (listening == -1)
 	{
 		std::cerr << "Can't create a socket!" << std::endl;
-		/* return (-1); */ // as of now the f.return type is void, we removed this; has to be resculptured;
+		return (-1); // as of now the f.return type is void, we removed this; has to be resculptured;
 	}
 	// TODO add setsockopt function and research
 	sockaddr_in hint;
@@ -38,19 +112,21 @@ void Server::createServer(void)
 	{
 		std::cerr << "Can't bind to IP/Port!" << std::endl;
 		std::cerr << errno << std::endl;
-		/* return (-2); */
+		return (-2);
 	}
 	if (listen(listening, SOMAXCONN) == -1)
 	{
 		std::cerr << "Can't listen!" << std::endl;
-		/* return (-3); */
+		return (-3);
 	}
 	this->fd_server = listening;
+	return (1);
 }
 
 //comented out to compile and work on authentification
-void Server::readInput(int client_no)
+int Server::readInput(int client_no)
 {
+	time_t	timeNow = time(NULL); 
 	char buf[4096];
 	int i = 0;
 	memset(buf, 0, 4096);
@@ -79,6 +155,23 @@ void Server::readInput(int client_no)
 
 	// WORK WITH BUFFER AFTER PARSING
 
+	/* Whole authUser can be under the "AcceptCall" function - will be moved later */
+	User* activeUser = this->findByFd(this->clients[client_no].fd);
+	if (activeUser != 0) {
+		if (this->authUser(activeUser) == false && (timeNow - activeUser->getCreationTime() >= 60))
+		{
+			// add function here to: kick and remove user from server: kickUser()
+			return (-1);
+		}
+	}
+	else
+		return (1);
+
+	//std::vector<std::string> bufferParsed = parseIncomingMsg(std::string(buf, 0, bytesRecv));
+	Message	*parsed_message = new Message(std::string(buf, 0, bytesRecv));
+
+	// std::vector<std::string> bufferParsed = parseIncomingMsg(std::string(buf, 0, bytesRecv));
+
 	// Send message
 	// std::string nick = "mjpro";
 	std::string user = "mj_nick";
@@ -102,6 +195,7 @@ void Server::readInput(int client_no)
 	// std::cout << "Message is as:" << message << "$\n";
 	// send(clientfd, buf, bytesRecv + 1, 0);
 	// }
+	return (1);
 }
 
 /* Accepting a call */
@@ -109,7 +203,7 @@ void Server::acceptCall()
 {
 	for (int i = 0; i < 1024; i++)
 	{
-		if ((this->clients[i].revents & POLLIN) == POLLIN) // fd is ready fo reading
+		if ((this->clients[i].revents & POLLIN) == POLLIN) // fd is ready for reading
 		{
 			std::cout << "this client i fd is: " << this->clients[i].fd << "\n and this fd_server is: " << this->fd_server << std::endl;
 			if (this->clients[i].fd == this->fd_server) // request for new connection
@@ -152,10 +246,12 @@ void Server::acceptCall()
 					clients[j].events = POLLIN; //? do we need this line
 					clients[j].revents = 0;
 
-					/* if (..)
-					else */ 
-						User	*newUser = new User(clients[j], host, service);
+					if (this->isUserInServer(host) == 1)
+						this->reconnectUser(clients[j], host, service);
+					else {
+						User	*newUser = new User(clients[j], host, service, this);
 						this->_userList.push_back(newUser);
+					}
 					
 					// Testing ---
 					std::ostringstream cmd;
@@ -174,7 +270,10 @@ void Server::acceptCall()
 			}
 			else // data from an existing connection, recieve it
 			{
+				// authent.....
 				this->readInput(i);
+				//executor; CMD handler
+				// AnswerToClient
 			}
 		}
 	}
@@ -229,3 +328,33 @@ void	Server::pollLoop()
 	return (NULL);
 } */
 
+void	Server::killUser(User * user)
+{
+	std::vector<Channel*>::iterator start = user->getChannels().begin();
+	std::vector<Channel*>::iterator end = user->getChannels().end();
+	if (user->getChannels().size() > 0)
+	{	
+		while (start != end)
+		{
+			std::vector<Channel*> channels = user->getChannels();
+			channels[0]->delete_user(user);
+			user->getChannels().erase(start);
+			start++;
+		}
+	}
+	std::vector<User*>::iterator start_U = _userList.begin();
+	std::vector<User*>::iterator end_U = _userList.end();
+	if (_userList.size() > 0)
+	{
+		while (start_U != end_U)
+		{
+			if (*start_U == user)
+			{
+				_userList.erase(start_U);
+				break ;
+			}
+			start_U++;
+		}
+	}
+	delete user;
+}

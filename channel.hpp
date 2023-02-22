@@ -20,31 +20,45 @@ class User;
 
 class Channel {
 public:
-	Channel();
-	Channel(...);
+	Channel(std::string newName);
 	Channel&				operator=(const Channel &src);
 	~Channel();
 
-	std::vector<Channel*>	getChannels(); // gives list of all channels that exist / could als obe under User class;
+	void					addCreator(User* creator); // adds the creator of channel
 
-	std::vector<User*>		getOperators();
-	void					setOperator();
+	std::vector<User*>		getOperators(); // returns list of operators
+	void					setOperator(User* newOp); // adds User to operator list
 
-	const std::string&		getName();
+	void					addBanned(User* toBan); // adds user to Banned list
+	bool					ifBanned(User* ifBan); // checks if user is banned from channel;
+	void					deleteUser(std::string _nick);
+
+	const std::string*		getName();
 	size_t					getMaxClients() const;
 	size_t					getClientCount() const;
 	void					addUser(User* user);
-	void					notify_others(const std::string& msg, User* skip);
+	void					delete_user(User* user);
+	std::string				findAllUsers();
+	int						ifOperator();
+	// void					notify_others(const std::string& msg, User* skip);
 
-	std::string				channelName;
+	// std::string*			channelName;
+
+
+
+
 
 private:
-	std::vector<User*> 		_operatorList;
-	std::string				_creatorUser;
-	std::vector<User*> 		_userLogList; // all users joined the channel
+	std::string				_channelName;
+	// size_t const			_maxClients;
+	// size_t				_countClients;
 
-	size_t max_clients;
-	size_t count_clients;
+	User*					_creatorUser; // user who created channel will always be operator
+	std::vector<User*> 		_operatorList; // all operators on channel
+	std::vector<User*> 		_userLogList; // all users joined the channel
+	std::vector<User*>		_bannedList; // all banned users
+
+	User*					_admin;
 };
 
 #endif
