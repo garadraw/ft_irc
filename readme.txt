@@ -1,4 +1,4 @@
-IRC project by Madis, Valentin and Ben
+
 
 
 
