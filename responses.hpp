@@ -1,8 +1,13 @@
-# pragma once
+#ifndef RESPONSES_HPP
+# define RESPONSES_HPP
+
+#include <string>
+#include <iostream>
 
 #define TIMEOUT                 180
 
-# define RPL_WELCOME(nick)      "001 " + nick + " welcome to ft_irc"
+// # define RPL_WELCOME(nick)              ("001 " #nick " welcome to ft_irc")
+
 # define RPL_YOURHOST           002
 # define RPL_CREATED            003
 # define RPL_MYINFO             004
@@ -28,7 +33,7 @@
 # define RPL_UNIQOPIS           325
 # define RPL_CHANNELMODEIS      324
 # define RPL_NOTOPIC            331
-# define RPL_TOPIC              332
+// # define RPL_TOPIC              332
 # define RPL_INVITING           341
 # define RPL_SUMMONING          342
 # define RPL_INVITELIST         346
@@ -38,20 +43,23 @@
 
 # define RPL_WHOREPLY           352
 # define RPL_ENDOFWHO           315
-# define RPL_NAMREPLY(nick, channel, userlist)           "353 " + nick + " = " + channel + " :" + userlist
-# define RPL_ENDOFNAMES(nick, channel)         "366 " + nick + " " + channel + " :End of userlist"
+// # define RPL_NAMREPLY(channel, userlist)                 ("353 " #channel " :" #userlist)
+# define RPL_ENDOFNAMES(nick, channel)                   ("366 " #nick " " #channel " :End of userlist")
 # define RPL_ENDOFLINKS         365
 # define RPL_BANLIST            367
 # define RPL_ENDOFBANLIST       368
-# define RPL_JOIN(nick, channel)				":" + nick + " JOIN :" + channel
-# define RPL_KICK(kicker, channel, target, reason) ":" + kicker + " KICK " + channel + " " + target + " :" + reason
+
+// # define RPL_JOIN(nick, channel)                        (":" #nick " JOIN :" #channel)
+
+# define RPL_KICK(kicker, channel, target, reason)      (":" #kicker " KICK " #channel " " #target " :" #reason)
+# define RPL_QUIT(nick, reason)                         (":" + #nick + " QUIT: " + #reason)
 
 # define RPL_INFO               371
-# define ERR_NOSUCHNICK(target, channel_name)			"401 " + target + " " + channel_name + " :No such nick/channel"
-# define ERR_NOSUCHSERVER(server_name)		            "402 " + server_name + " :No such server"
-# define ERR_NOSUCHCHANNEL		403
+//# define ERR_NOSUCHNICK(target, channel_name)			("401 " #target  " " #channel_name " :No such nick/channel")
+# define ERR_NOSUCHSERVER(server_name)		            ("402 " #server_name " :No such server")
+//# define ERR_NOSUCHCHANNEL		403
 # define ERR_CANNOTSENDTOCHAN	404
-# define ERR_TOOMANYCHANNELS(nick, channel_name)    "405 " + nick + " " + channel_name + ": maximum of channels reached"
+// # define ERR_TOOMANYCHANNELS(nick, channel_name)         ("405 " #nick " " #channel_name ": maximum of channels reached")
 # define ERR_WASNOSUCHNICK		406
 # define ERR_TOOMANYTARGETS		407
 # define ERR_NOORIGIN			409
@@ -59,34 +67,34 @@
 # define ERR_NOTEXTTOSEND		412
 # define ERR_NOTOPLEVEL			413
 # define ERR_WILDTOPLEVEL		414
-# define ERR_UNKNOWNCOMMAND(cmd_name)		"421 " + cmd_name + ":Unknown command"
+# define ERR_UNKNOWNCOMMAND(cmd_name)	           	("421 " #cmd_name ":Unknown command")
 # define ERR_NOMOTD				422
 # define ERR_NOADMININFO		423
 # define ERR_FILEERROR			424
-# define ERR_NONICKNAMEGIVEN(nick)	"431 " + nick + " :No nickname given"
+// # define ERR_NONICKNAMEGIVEN(nick)	                ("431 " #nick " :No nickname given")
 # define ERR_ERRONEUSNICKNAME	432
-# define ERR_NICKNAMEINUSE(nick)		"433 "  + nick + " :Nickname is already in use"
+// # define ERR_NICKNAMEINUSE(nick)		            ("433 " #nick  " :Nickname is already in use")
 # define ERR_NICKCOLLISION		436
-# define ERR_USERNOTINCHANNEL(target, channel_name)	"441 " + target + " " + channel_name + " :They aren't on that channel"
-# define ERR_NOTONCHANNEL(nick, channel_name)		"442 " + nick + " " + channel_name " :You're not on that channel"
-# define ERR_USERONCHANNEL		443
+# define ERR_USERNOTINCHANNEL(target, channel_name)	("441 " #target " " #channel_name " :They aren't on that channel")
+# define ERR_NOTONCHANNEL(nick, channel_name)		("442 " #nick " " #channel_name " :You're not on that channel")
+// # define ERR_USERONCHANNEL(user, channel)		("443 " #user " " #channel " :is already on channel")
 # define ERR_NOLOGIN			444
 # define ERR_SUMMONDISABLED		445
 # define ERR_USERSDISABLED		446
-# define ERR_NOTREGISTERED(_nick)		"451 " + _nick + " :You have not registered"
-# define ERR_NEEDMOREPARAMS(nick, cmd)	"461 " + nick + cmd + " :not enough parameters"
-# define ERR_ALREADYREGISTRED(nick)	"462 " + nick + " :You may not reregister"
+//# define ERR_NOTREGISTERED(_nick)		            ("451 " #_nick " :You have not registered")
+//# define ERR_NEEDMOREPARAMS(nick, cmd)	           ("461 " #nick " " #cmd " :not enough parameters")
+//# define ERR_ALREADYREGISTRED(nick)                  ("462 " #nick " :You may not reregister")
 # define ERR_NOPERMFORHOST		463
 # define ERR_PASSWDMISMATCH		464
 # define ERR_YOUREBANNEDCREEP	465
 # define ERR_KEYSET				467
-# define ERR_CHANNELISFULL(nick, channel)		"471 " + nick + " " + channel + " channel is full"
+// # define ERR_CHANNELISFULL(nick, channel)		("471 " #nick " " #channel " channel is full")
 # define ERR_UNKNOWNMODE		472
 # define ERR_INVITEONLYCHAN		473
-# define ERR_BANNEDFROMCHAN		474
-# define ERR_BADCHANNELKEY(nick, channel)		"475 " + nick + " " + channel + " cannot join: wrong password"
+// # define ERR_BANNEDFROMCHAN(channel)	        ("474" #channel " :Cannot join channel (+b)")
+# define ERR_BADCHANNELKEY(nick, channel)		("475 " #nick " " #channel " cannot join: wrong password")
 # define ERR_NOPRIVILEGES		481
-# define ERR_CHANOPRIVSNEEDED(nick, channel)					"482 " + nick + " " + channel + " " + " :You're not channel operator"
+# define ERR_CHANOPRIVSNEEDED(nick, channel)					("482 " #nick " " #channel " :You're not channel operator")
 # define ERR_CANTKILLSERVER		483
 # define ERR_NOOPERHOST			491
 # define ERR_UMODEUNKNOWNFLAG	501
@@ -137,3 +145,5 @@
 # define RPL_ADMINLOC1			257
 # define RPL_ADMINLOC2			258
 # define RPL_ADMINEMAIL			259
+
+#endif

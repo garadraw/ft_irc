@@ -2,6 +2,9 @@
 # define MESSAGE_HPP "Message.hpp"
 
 # include "server.hpp"
+#include "user.hpp"
+
+class User;
 
 typedef struct	s_prefix
 {
@@ -28,6 +31,8 @@ class Message // CURRENT STATUS: Can only generate Messages with commands NICK, 
 		~Message();
 
 		Message	&operator=(const Message &original);
+		User*					p_user;
+		std::string				message;
 
 		t_prefix					getPrefix(void) const;
 		std::string					getCommand(void) const;

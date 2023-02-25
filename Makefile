@@ -1,5 +1,5 @@
 CC			= c++
-CFLAGS		= -Wall -Werror -Wextra -std=c++98 #-g -Og
+CFLAGS		= -Wall -Werror -Wextra -std=c++98 -ggdb3 -fsanitize=address -g -Og
 RM			= rm -f
 NAME		= irc
 
@@ -9,7 +9,9 @@ SRC			= main.cpp \
 				ping_pong.cpp \
 				Message.cpp \
 				channel.cpp \
-				userUtils.cpp \
+				commands.cpp \
+				CommanHandler.cpp \
+				responses.cpp
 
 OBJ			= $(SRC:cpp=o)
 

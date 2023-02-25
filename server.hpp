@@ -16,10 +16,14 @@
 
 #include "user.hpp"
 #include "responses.hpp"
+#include "Message.hpp"
+#include "CommanHandler.hpp"
 /* #include "channel.hpp" */
 
 class Channel;
 class User;
+class Message;
+class CommanHandler;
 
 class Server {
 	public:
@@ -37,13 +41,14 @@ class Server {
 
 		int						fd_server;
 		struct pollfd 			clients[1024];
+		Message*				msg;
+		CommanHandler*			handler;
 
 		void					killUser(User * user);
 		Channel*				findChannel(std::string name); // finds a channel by name
 
 		// Channel*				getChannel(const std::string& channel_name);
-
-	private:
+		void					addChannel(Channel* newChannel);
 		int						isUserInServer(char* host); // checks if user has already been registered before
 		void					reconnectUser(pollfd &client, char* host, char* service); // reconnects user (by host) to existing user profile
 
@@ -53,11 +58,14 @@ class Server {
 		bool					authUser(User* activeUser); // checks if user is authed, meaning: pass, nick and username provided
 		void					kickUser(User* toBeKicked);
 		int						readInput(int client_no);
-		void					acceptCall();
+		int						acceptCall();
+		void					sendmsg(User* foundUser);
 
+		std::string				_serverName;
+
+	private:
 		int						_port;
 		std::string				_pass;
-		std::string				_serverName;
 		std::vector<User*> 		_userList;
 		std::vector<Channel*> 	_channelList;
 

@@ -14,7 +14,7 @@ void Server::pingClient()
 		User & user = *_userList.at(i);
 		stringPing = "PING :" + std::to_string(user.getTime()) + "\r\n";
 		timeNow = std::time(NULL);
-		int sendet = send(*(user.getFd()), stringPing.c_str(), sizeof(stringPing), 0);
+		int sendet = send(user.getFd(), stringPing.c_str(), sizeof(stringPing), 0);
 		if (sendet == -1)
 		{
 			std::cerr << "Problem with Server-Ping" << std::endl;
