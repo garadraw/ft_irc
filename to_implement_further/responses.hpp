@@ -56,7 +56,7 @@
 
 # define RPL_INFO               371
 //# define ERR_NOSUCHNICK(target, channel_name)			("401 " #target  " " #channel_name " :No such nick/channel")
-# define ERR_NOSUCHSERVER(server_name)		            ("402 " #server_name " :No such server")
+//# define ERR_NOSUCHSERVER(server_name)		            ("402 " #server_name " :No such server")
 //# define ERR_NOSUCHCHANNEL		403
 # define ERR_CANNOTSENDTOCHAN	404
 // # define ERR_TOOMANYCHANNELS(nick, channel_name)         ("405 " #nick " " #channel_name ": maximum of channels reached")
@@ -67,7 +67,7 @@
 # define ERR_NOTEXTTOSEND		412
 # define ERR_NOTOPLEVEL			413
 # define ERR_WILDTOPLEVEL		414
-# define ERR_UNKNOWNCOMMAND(cmd_name)	           	("421 " #cmd_name ":Unknown command")
+// # define ERR_UNKNOWNCOMMAND(cmd_name)	           	("421 " #cmd_name ":Unknown command")
 # define ERR_NOMOTD				422
 # define ERR_NOADMININFO		423
 # define ERR_FILEERROR			424
@@ -75,8 +75,8 @@
 # define ERR_ERRONEUSNICKNAME	432
 // # define ERR_NICKNAMEINUSE(nick)		            ("433 " #nick  " :Nickname is already in use")
 # define ERR_NICKCOLLISION		436
-# define ERR_USERNOTINCHANNEL(target, channel_name)	("441 " #target " " #channel_name " :They aren't on that channel")
-# define ERR_NOTONCHANNEL(nick, channel_name)		("442 " #nick " " #channel_name " :You're not on that channel")
+// # define ERR_USERNOTINCHANNEL(target, channel_name)	("441 " #target " " #channel_name " :They aren't on that channel")
+// # define ERR_NOTONCHANNEL(nick, channel_name)		("442 " #nick " " #channel_name " :You're not on that channel")
 // # define ERR_USERONCHANNEL(user, channel)		("443 " #user " " #channel " :is already on channel")
 # define ERR_NOLOGIN			444
 # define ERR_SUMMONDISABLED		445
@@ -89,12 +89,12 @@
 # define ERR_YOUREBANNEDCREEP	465
 # define ERR_KEYSET				467
 // # define ERR_CHANNELISFULL(nick, channel)		("471 " #nick " " #channel " channel is full")
-# define ERR_UNKNOWNMODE		472
+//# define ERR_UNKNOWNMODE		472
 # define ERR_INVITEONLYCHAN		473
 // # define ERR_BANNEDFROMCHAN(channel)	        ("474" #channel " :Cannot join channel (+b)")
 # define ERR_BADCHANNELKEY(nick, channel)		("475 " #nick " " #channel " cannot join: wrong password")
 # define ERR_NOPRIVILEGES		481
-# define ERR_CHANOPRIVSNEEDED(nick, channel)					("482 " #nick " " #channel " :You're not channel operator")
+// # define ERR_CHANOPRIVSNEEDED(nick, channel)					("482 " #nick " " #channel " :You're not channel operator")
 # define ERR_CANTKILLSERVER		483
 # define ERR_NOOPERHOST			491
 # define ERR_UMODEUNKNOWNFLAG	501
@@ -107,7 +107,7 @@
 # define RPL_MOTDSTART			375
 # define RPL_MOTD				372
 # define RPL_ENDOFMOTD			376
-# define RPL_YOUREOPER			381
+// # define RPL_YOUREOPER	    381         (":You are now an IRC operator")
 # define RPL_REHASHING			382
 # define RPL_TIME				391
 # define RPL_USERSSTART			392

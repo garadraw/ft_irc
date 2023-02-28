@@ -9,16 +9,19 @@
 #include <poll.h>
 #include <sstream>
 #include <signal.h>
+#include <cstdlib>
 
 #include "server.hpp"
 
-// int fd_global;
-
-/* void siginthandler(int signum)
-{
-	close(ourSever.ft_server);
-	exit(1);
-} */
+void	signalHandler(int sig) {
+	std::cout << "Attempting Quit Server" << std::endl;
+	if (sig == SIGINT)
+	{
+		Server::_active = false;
+		signal(SIGINT, SIG_IGN);
+	}
+	std::cout << "Quit Server" << std::endl;
+}
 
 int	main(int argc, char** argv)
 {
@@ -29,13 +32,10 @@ int	main(int argc, char** argv)
 	}
 	int	port = atoi(argv[1]);
 	std::string serverPass(argv[2]);
-/* 	std::string serverName(argv[3]); */
 
 	Server ourServer(serverPass, port);
-    ourServer.createServer();
-	// fd_global = ourServer.fd_server;
-	/* signal(SIGINT, siginthandler);
-	signal(SIGQUIT, siginthandler); */
+	ourServer.createServer();
+	signal(SIGINT, signalHandler);
 	ourServer.initClient();
 	ourServer.clients[0].fd = ourServer.fd_server;
 	ourServer.clients[0].events = POLLIN;

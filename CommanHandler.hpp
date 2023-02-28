@@ -8,7 +8,6 @@
 #include "user.hpp"
 
 class User;
-// class Command;
 class Message;
 class Server;
 
@@ -21,7 +20,6 @@ class CommanHandler
 		~CommanHandler();
 
 		void start(User* user, const std::string& message);
-
 
 };
 

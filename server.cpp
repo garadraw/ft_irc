@@ -1,16 +1,17 @@
 #include <errno.h>
 #include <ctime>
 #include "server.hpp"
-#include "Message.hpp"
-
+#include <iostream>
+#include <vector>
 
 		/*  Constructors and Deconstructors  */
 //===================================================//
 
+bool Server::_active = true;
 
-Server::Server(std::string serverPass, int port): _pass(serverPass), _port(port)
+Server::Server(std::string serverPass, int port): fd_server(), clients(), msg(), handler(), _serverName("OurServer"), _channelList(), _port(port), _pass(serverPass)
 {
-	_serverName = "OurServer";
+	std::vector<User *> _userList;
 	std::cout << "Server Object Created" << std::endl;
 }
 
@@ -19,11 +20,8 @@ Server::~Server()
 	std::cout << "Deconstructor Called" << std::endl;
 }
 
-
-
 		/*   Getters and Setters    */
 //===================================================//
-
 
 void	Server::setPass(std::string pass) {
 	this->_pass = pass;
@@ -33,19 +31,17 @@ std::string	Server::getPass() const {
 	return (this->_pass);
 }
 
-void	Server::addChannel(Channel * newChannel)
+void	Server::addChannel(Channel *newChannel)
 {
 	this->_channelList.push_back(newChannel);
 }
-
-
 
 			/*    Checkers     */
 //===================================================//
 
 User*	Server::findByFd(int clientFd) {
 	std::vector<User*>::iterator itr;
-	for (itr=begin(this->_userList); itr != end(this->_userList); itr++) {
+	for (itr=this->_userList.begin(); itr != this->_userList.end(); itr++) {
 		if (clientFd == (*itr)->getFd())
 			return (*itr);
 	}
@@ -54,10 +50,16 @@ User*	Server::findByFd(int clientFd) {
 }
 
 User*	Server::findByNick(std::string nick) {
+	std::cout << "Reached here 6" << std::endl;
 	std::vector<User*>::iterator itr;
-	for (itr=begin(this->_userList); itr != end(this->_userList); itr++) {
-		if (nick == (*itr)->getNick())
-			return (*itr);
+	if (this->_userList.empty()) {
+		return (NULL); }
+	else {
+		std::cout << "Reached here 7" << std::endl;
+		for (itr=this->_userList.begin(); itr != this->_userList.end(); itr++) {
+			if (nick == (*itr)->getNick())
+				return (*itr);
+		}
 	}
 	std::cerr << "User nickname not found" << std::endl;
 	return (NULL);
@@ -65,7 +67,7 @@ User*	Server::findByNick(std::string nick) {
 
 Channel*	Server::findChannel(std::string name) {
 	std::vector<Channel*>::iterator itr;
-	for (itr=begin(this->_channelList); itr != end(this->_channelList); itr++) {
+	for (itr=this->_channelList.begin(); itr != this->_channelList.end(); itr++) {
 		if (name == (*itr)->getName())
 			return (*itr);
 	}
@@ -73,43 +75,27 @@ Channel*	Server::findChannel(std::string name) {
 	return (NULL);
 }
 
-/* Check if the User is already in the Server Object's User List */
-int	Server::isUserInServer(char* host) {
-	for (std::vector<User *>::iterator it = this->_userList.begin(); it != this->_userList.end(); ++it)
-	{
-		if ((*(*it)).getHost() == &host)
-			return (1);
-	}
-	std::cerr << "User not Found in Server User List" << std::endl;
-	return (0);
-}
-
-
-
-
 
 			/*   Server Actions  */
 //==============================================//
 
-
-void	Server::kickUser(User* toBeKicked) {
-	//close fd? 
-	// delete toBeKicked;
-}
-
-void	Server::killUser(User * user)
+void	Server::killUser(User* user)
 {
-	std::vector<Channel*>::iterator start = user->getChannels().begin();
-	std::vector<Channel*>::iterator end = user->getChannels().end();
-	if (user->getChannels().size() > 0)
-	{	
+	std::vector<Channel*> activeChannelList = user->getChannels();
+	std::vector<Channel*>::iterator start = activeChannelList.begin();
+	std::vector<Channel*>::iterator end = activeChannelList.end();
+	if (user->getChannels().size() > 1)
+	{
 		while (start != end)
 		{
-			std::vector<Channel*> channels = user->getChannels();
-			channels[0]->delete_user(user);
-			user->getChannels().erase(start);
+			(*start)->deleteUser(user->getNick()); // delete user from userloglist in channel
 			start++;
 		}
+	}
+	else if (user->getChannels().size() != 0)
+	{
+		(*start)->deleteUser(user->getNick());
+		//start++;
 	}
 	std::vector<User*>::iterator start_U = _userList.begin();
 	std::vector<User*>::iterator end_U = _userList.end();
@@ -117,9 +103,10 @@ void	Server::killUser(User * user)
 	{
 		while (start_U != end_U)
 		{
-			if (*start_U == user)
+			if ((*start_U)->getNick() == user->getNick()) // delete user from server
 			{
 				_userList.erase(start_U);
+				std::cout << "erasing user" << std::endl;
 				break ;
 			}
 			start_U++;
@@ -128,45 +115,17 @@ void	Server::killUser(User * user)
 	delete user;
 }
 
-
 			/*    Socket Actions    */
 //===================================================//
 
-
-void	Server::reconnectUser(pollfd &client, char* host, char* service) {
-	User* foundUser;
-	for (std::vector<User *>::iterator it = this->_userList.begin(); it != this->_userList.end(); ++it)
-	{
-		if ((*(*it)).getHost() == &host)
-			*foundUser = *(*it);
-			foundUser->setClient(client);
-			foundUser->setHost(host);
-			foundUser->setService(service);
-	}
-}
-
-
-// Disable functionality, BUT usable! Not required by Subject PDF.
-/* bool	Server::authUser(User* activeUser) {
-	if (activeUser->pwCheck() == false)
-		return false;
-	if (!activeUser->getNick().c_str())
-		return false;
-	if (!activeUser->getUsername().c_str())
-		return false;
-	else
-		return true;
-} */
-
-/* void	Server::kickUser(User* toBeKicked) {
-	//close fd? 
-	// delete toBeKicked;
-} */
-
-
-
-
-
+/*
+* setsocktopt: sets certain options when using the associated socket
+* SOL_SOCKET: indicates we are setting options at socket level
+* SO_REUSEADDR: allows the socket to be bound to an address that is already in use
+* **************************************
+* fcntl(): manipulates filedescriptors;
+* O_NONBLOCK: Do not block an open, a read, or a write on the file (do not wait for terminal input)
+*/
 int Server::createServer(void)
 {
 	int listening = socket(AF_INET, SOCK_STREAM, 0);
@@ -175,23 +134,34 @@ int Server::createServer(void)
 		std::cerr << "Can't create a socket!" << std::endl;
 		return (-1);
 	}
-	// TODO add setsockopt function and research
-	sockaddr_in hint;
-	hint.sin_family = AF_INET;
-	hint.sin_addr.s_addr = htonl(INADDR_ANY);
+	
+	int opt = 1;
+	if (setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+		std::cerr << "Error during setting socket options\n";
+	
+	if (fcntl(listening, F_SETFL, O_NONBLOCK) == -1)
+		std::cerr << "Error during setting socket to NON_BLOCKING\n";
+	
+	struct sockaddr_in hint = {};
+	// setting everything in the struct hint to zero. prevents certain segfaults
+	bzero((char*) &hint, sizeof(hint));
+
+	hint.sin_family = AF_INET; // IPv4 only
+	hint.sin_addr.s_addr = htonl(INADDR_ANY); // puts host IP
 	// inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
-	hint.sin_port = htons(this->_port);
-	if (bind(listening, (sockaddr *)&hint, sizeof(hint)) == -1)
+	hint.sin_port = htons(this->_port); // convert host bytes to network bytes
+	if (bind(listening, (sockaddr *)&hint, sizeof(hint)) == -1) // binding socket to host IP
 	{
 		std::cerr << "Can't bind to IP/Port!" << std::endl;
 		std::cerr << errno << std::endl;
 		return (-2);
 	}
-	if (listen(listening, SOMAXCONN) == -1)
+	if (listen(listening, SOMAXCONN) == -1) // socket waiting for connection
 	{
 		std::cerr << "Can't listen!" << std::endl;
 		return (-3);
 	}
+	//ft_log("Server listening");
 	this->fd_server = listening;
 	return (1);
 }
@@ -200,7 +170,7 @@ int Server::createServer(void)
 int Server::readInput(int client_no)
 {
 	char buf[4096];
-	int i = 0;
+		// int i = 0;
 	memset(buf, 0, 4096);
 	int bytesRecv = recv(this->clients[client_no].fd, buf, 4096, 0);
 	if (bytesRecv == -1)
@@ -221,36 +191,27 @@ int Server::readInput(int client_no)
 		// Display message
 		std::cout << "Received: " << std::string(buf, 0, bytesRecv) << std::endl;
 	}
-	
-	//std::vector<std::string> bufferParsed = parseIncomingMsg(std::string(buf, 0, bytesRecv));
-	this->msg = new Message(std::string(buf, 0, bytesRecv));
-	this->msg->message = buf;
-	// std::cout << "Reached in readInput" << std::endl;
-
+	this->msg = std::string(buf, 0, bytesRecv);
 	return (1);
 }
 
-/* Created for testing, can be used to send messages to any user. Input: pointer to user. */
-void Server::sendmsg(User* foundUser)
-{
-	for (int i = 1; i < 1024; i++)
-	{
-		if (clients[i].fd != -1)
-		{
-			send(foundUser->getFd(), this->msg->message.c_str(), this->msg->message.size(), 0);
-		}
-	}
-}
-
-/* Accepting a call */
+/*
+* pollfd{fd,events,revents}: struct defines the relevant socket, what kind of event to wait for, and
+* the type of event to respond with;
+***********************************************
+* POLLIN: read in data (from client);
+* poll(): waits for action (I/O) on a filedescriptor in a set of filedescriptors
+* returns -1 if faied, 0 if timed out or num of fd's connected;
+* POLLHUP: Connection disconnected
+*/
 int Server::acceptCall()
 {
-	time_t	timeNow = time(NULL);
+	//time_t	timeNow = time(NULL);
 	for (int i = 0; i < 1024; i++)
 	{
 		if ((this->clients[i].revents & POLLIN) == POLLIN) // fd is ready for reading
 		{
-			std::cout << "Message incoming from fd: " << this->clients[i].fd << std::endl;
+			std::cout << "\n ----- New message incoming from fd: " << this->clients[i].fd << std::endl;
 			if (this->clients[i].fd == this->fd_server) // request for new connection
 			{
 				std::cout << "New Connection " << std::endl;
@@ -278,8 +239,8 @@ int Server::acceptCall()
 					inet_ntop(AF_INET, &user.sin_addr, host, NI_MAXHOST);
 					std::cout << host << " connected on " << ntohs(user.sin_port) << std::endl;
 				}
-				// until here
-				
+				// ... until here
+
 				int j = 0;
 				for (; j < 1024; j++)
 					if (clients[j].fd == -1)
@@ -289,13 +250,6 @@ int Server::acceptCall()
 					clients[j].fd = userSocket;
 					clients[j].events = POLLIN;
 					clients[j].revents = 0;
-
-					// Following lines are disable for evals. Reason: this check is not needed for our version of IRC.
-						// WHat does the check do? It only lets each computer join the server once, and reconnects the
-						// user in case it has logged in from the same machine before.
-					//if (this->isUserInServer(host) == 1)
-					//	this->reconnectUser(clients[j], host, service);
-					//else {
 						std::cout << "New connection data:\n fd_server: " << this->fd_server << std::endl;
 						std::cout << "handler: " << this->handler << std::endl;
 						std::cout << "msg: " << this->msg << std::endl;
@@ -303,23 +257,11 @@ int Server::acceptCall()
 						std::cout << "port: " << this->_port << std::endl;
 						std::cout << "host: " << host << std::endl;
 						std::cout << "service: " << service << std::endl;
-						// std::cout << "channelList: " << this->_channelList[0] << std::endl;
-						// std::cout << "userList: " << this->_userList[0] << std::endl;
-						// std::cout << "channelList: " << this->_channelList[0] << std::endl;
 						std::cout << "*********************************************************************************" << std::endl;
 						User	*newUser = new User(clients[j], host, service, this);
-						std::cout << "Reached debugging point 1" << std::endl;
+						//std::cout << "Reached debugging point 1" << std::endl;
 						this->_userList.push_back(newUser);
 					//}
-					
-							// Testing ---
-									/* std::ostringstream cmd;
-											// cmd << "%C29*%O$tCapabilities acknowledged: %C29$2%O";
-									cmd << "%UChannel          mjpro   fun";
-									std::string cmd_str = cmd.str();
-									send(clients[j].fd, cmd_str.c_str(), cmd_str.size(), 0); */
-							// --- until here
-
 				}
 				else
 				{
@@ -330,23 +272,14 @@ int Server::acceptCall()
 			else // data from an existing connection, recieve it
 			{
 				User* foundUser = this->findByFd(this->clients[i].fd);
-				// authUser disables for now - but can be enabled later. 
-				// What does it do? Checks if the user is authenticated. It is NOT NEEDED for evals, because
-				// our chosen HexChat clients only lets users log in if they authenticate.
-				/* if (foundUser != 0) {
-					if (this->authUser(foundUser) == false && (timeNow - foundUser->getCreationTime() >= 6000))
-					{
-						// add function here to kick user from server: kickUser()
-						return (-1);
-					}
-				}
+				if (this->readInput(i) == -1)
+					return (-1);
 				else
-					return (1); */
-				// std::cout << "Reached debugging point 0" << std::endl;
-				this->readInput(i);
-				handler->start(foundUser, msg->message);
-				// std::cout << "Reached debugging point 2" << std::endl;
-				// sendmsg(foundUser);
+				{
+					std::cout << "Reached Accept Call Function, in  else if: Start" << std::endl;
+					handler->start(foundUser, msg);
+
+				}
 			}
 		}
 	}
@@ -363,37 +296,36 @@ void	Server::initClient()
 	}
 }
 
+bool	Server::free_everything() {
+	std::cout << "This function will free and kill all users quit" << std::endl;
+	// kill all users, then all channels will be killed
+	std::vector<User *>::iterator	iterU = this->_userList.begin();
+	while (!this->_userList.empty())
+	{
+		this->killUser(*iterU);
+		//iterU++;
+	}
+	std::cout << "free_everything(): All users killed. Server ready to shut down." << std::endl;
+	// server is killed outside;
+	return (false);
+}
+
 void	Server::pollLoop()
 {
-	while (1)
+	bool _activeLoop = true;
+	while (_activeLoop)
 	{
 		switch (poll(this->clients, 1024, 10000))
 		{
 		case 0:
-			// std::cout << "Should not be possible" << std::endl;
 			break;
 		case -1:
-			// std::cout << "could not be possible" << std::endl;
 			break;
 		default:
 			this->acceptCall();
-			// pingClient();
-			// readinput(clients);
 			break;
 		}
+		if (_active == false)
+			_activeLoop = this->free_everything();
 	}
 }
-
-
-// bool	Server::authUser(User* activeUser) {
-// 	if (activeUser->pwCheck() == false)
-// 		return false;
-// 	if (!activeUser->getNick().c_str())
-// 		return false;
-// 	if (!activeUser->getUsername().c_str())
-// 		return false;
-// 	else
-// 		return true;
-// }
-
-

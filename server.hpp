@@ -11,14 +11,14 @@
 #include <string>
 #include <poll.h>
 #include <sstream>
-// #include <signal.h>
+#include <signal.h>
 #include <vector>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 
 #include "user.hpp"
-#include "responses.hpp"
-#include "Message.hpp"
 #include "CommanHandler.hpp"
-/* #include "channel.hpp" */
 
 class Channel;
 class User;
@@ -36,38 +36,34 @@ class Server {
 		void		pollLoop();
 		void		pingClient();
 
+		static bool 			_active;
+
 		void					setPass(std::string pass);
 		std::string				getPass() const;
 
 		int						fd_server;
 		struct pollfd 			clients[1024];
-		Message*				msg;
+		std::string				msg;
 		CommanHandler*			handler;
 
 		void					killUser(User * user);
 		Channel*				findChannel(std::string name); // finds a channel by name
 
-		// Channel*				getChannel(const std::string& channel_name);
 		void					addChannel(Channel* newChannel);
-		int						isUserInServer(char* host); // checks if user has already been registered before
-		void					reconnectUser(pollfd &client, char* host, char* service); // reconnects user (by host) to existing user profile
 
 		User*					findByFd(int clientFd); // finds user by FD
 		User*					findByNick(std::string nick); // finds user by nickname
-		// User*					findByHost()
-		bool					authUser(User* activeUser); // checks if user is authed, meaning: pass, nick and username provided
-		void					kickUser(User* toBeKicked);
 		int						readInput(int client_no);
 		int						acceptCall();
-		void					sendmsg(User* foundUser);
+		bool					free_everything();
 
 		std::string				_serverName;
+		std::vector<Channel*> 	_channelList;
 
 	private:
 		int						_port;
 		std::string				_pass;
 		std::vector<User*> 		_userList;
-		std::vector<Channel*> 	_channelList;
 
 		std::vector<std::string>	parseIncomingMsg(std::string buffer);
 };

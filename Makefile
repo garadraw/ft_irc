@@ -1,24 +1,25 @@
 CC			= c++
 CFLAGS		= -Wall -Werror -Wextra -std=c++98 -ggdb3 -fsanitize=address -g -Og
 RM			= rm -f
-NAME		= irc
+NAME		= ircserv
 
 SRC			= main.cpp \
 				server.cpp \
 				user.cpp \
-				ping_pong.cpp \
-				Message.cpp \
 				channel.cpp \
 				commands.cpp \
 				CommanHandler.cpp \
 				responses.cpp
 
-OBJ			= $(SRC:cpp=o)
+# OBJ			= $(SRC:cpp=o)
 
 all:		$(NAME)
 
-$(NAME):	$(OBJ)
-			$(CC) $(OBJ) $(CFLAGS) -o $(NAME)
+$(NAME):	#$(OBJ)
+			$(CC) $(SRC) $(CFLAGS) -o $(NAME)
+
+#%.o: %.cpp
+#	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
 			$(RM) $(OBJ)

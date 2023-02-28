@@ -12,7 +12,7 @@ Message::Message()
 
 Message::Message(std::string message_raw)
 {
-	// Might use private parsing function(s)... OR NOT...
+	// Might use private parsing function(s)
 	this->setPrefix("", "", "");
 
 	// Parse command
@@ -64,8 +64,6 @@ Message::Message(std::string message_raw)
 		}
 
 		// Parse flags
-		// while (message_raw.at(message_index) == ' ' || message_raw.at(message_index) == '\t')
-		// 	message_index++;
 	}
 	else // At this point, the message is identified as being just plain freetext.
 	{

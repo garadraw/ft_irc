@@ -4,8 +4,7 @@
 		/*  Constructors and Deconstructors  */
 //===================================================//
 
-
-Channel::Channel(std::string newName) : _channelName(newName), _maxClients(60), _countClients(0) {
+Channel::Channel(std::string newName) : _countClients(0), _userLogList(), _server(), _channelName(newName), _maxClients(60), _creatorUser(), _operatorList(), _bannedList() {
 	std::cout << "New channel created with name " << _channelName << std::endl;
 }
 
@@ -22,10 +21,8 @@ Channel::~Channel() {
 
 
 
-
 		/*   Getters and Setters    */
 //===================================================//
-
 
 void	Channel::addCreator(User* creator) {
 	this->_creatorUser = creator;
@@ -59,12 +56,10 @@ size_t	Channel::getClientCount() const
 	return (this->_countClients);
 }
 
-
-
-
 void	Channel::addUser(User* user)
 {
 	this->_userLogList.push_back(user);
+	std::cout << "This nick is stored on the userLogList: " << user->getNick() << std::endl;
 }
 
 void	Channel::addBanned(User* toBan)
@@ -72,46 +67,89 @@ void	Channel::addBanned(User* toBan)
 	this->_bannedList.push_back(toBan);
 }
 
-void Channel::delete_user(User* user)
-{
-	std::vector<User*>::iterator start = this->_userLogList.begin();
-	std::vector<User*>::iterator end = this->_userLogList.end();
-
-	if (this->_userLogList.size() == 0)
-	{
-		return;
-	}
-
-	while (start != end)
-	{
-		if (((*start))->getNick().compare(user->getNick()) == 0)
-		{
-			this->_userLogList.erase(start);
-		}
-		start++;
-	}
-
-	if (this->_admin == user)
-	{
-		_admin = *(this->_userLogList.begin());
-		std::cout << _admin->getNick() << " is now admin of channel: " << this->getName() << std::endl;
-	}
-}
-
-
+/* Removes a user from a channel, and removes channel if last user has left. Notifies other clients of action. */
 void	Channel::deleteUser(std::string _nick)
 {
-		std::string str;
-
-		std::vector<User*>::iterator itr;
-		for (itr=begin(this->_userLogList); itr != end(this->_userLogList); itr++)
+	std::string str;
+	std::vector<User*>::iterator itro;
+	for (itro=this->_operatorList.begin(); itro != this->_operatorList.end(); itro++)
+	{
+		if (_nick == (*itro)->_nick)
 		{
-			if(_nick == (*itr)->getNick())
-				_userLogList.erase(itr);
+			_operatorList.erase(itro);
+			break ;
 		}
+	}
+	std::vector<User*>::iterator itr;
+	for (itr=this->_userLogList.begin(); itr != this->_userLogList.end(); itr++)
+	{
+		if (_nick == (*itr)->_nick) {
+			_userLogList.erase(itr);
+			break ;
+		}
+	}
+	if (_userLogList.empty() == false) {
+		std::string allUserList = this->findAllUsers();
+		std::string reply_construct = ":" + this->_server->_serverName + " 353 " + (*itr)->getNick() + " = " + this->getName() + " :" + allUserList;
+		(*itr)->replyLightAll(reply_construct.c_str(), this);
+	}
+	if (_userLogList.empty()) {
+		std::cout << (*(this->_server->_channelList.begin()))->getName() << std::endl;
+		if (!this->_server->_channelList.empty()) {
+			std::vector<Channel*>::iterator	iterc = this->_server->_channelList.begin();
+			long unsigned int i = 0;
+			while (i < this->_server->_channelList.size())
+			{
+				if (this->getName() == this->_server->_channelList.at(i)->getName()) {
+					
+					this->_server->_channelList.erase(iterc);
+					break ;
+				}
+				iterc++;
+				i++;
+			}
+		}
+		delete this;
+	}
 }
 
-
+void Channel::partUser(std::string _nick) {
+		
+		std::vector<User*>::iterator itro;
+		for (itro=this->_operatorList.begin(); itro != this->_operatorList.end(); itro++)
+		{
+			if (_nick == (*itro)->_nick) {
+				_operatorList.erase(itro);
+				break ;
+			}
+		}
+		std::vector<User*>::iterator itr;
+		for (itr=this->_userLogList.begin(); itr != this->_userLogList.end(); itr++)
+			{
+				if (_nick == (*itr)->_nick) {
+					_userLogList.erase(itr);
+					break ;
+				}
+			}
+		if (_userLogList.empty()) {
+			std::cout << (*(this->_server->_channelList.begin()))->getName() << std::endl;
+			if (!this->_server->_channelList.empty()) {
+				std::vector<Channel*>::iterator	iterc = this->_server->_channelList.begin();
+				unsigned long int i = 0;
+				while (i < this->_server->_channelList.size())
+				{
+					if (this->getName() == this->_server->_channelList.at(i)->getName()) {
+						
+						this->_server->_channelList.erase(iterc);
+						break ;
+					}
+					iterc++;
+					i++;
+				}
+			}
+			delete this;
+		}
+}
 
 
 			/*    Checkers     */
@@ -122,7 +160,7 @@ void	Channel::deleteUser(std::string _nick)
 User*	Channel::isUserinChannelbys(std::string _nick)
 {
 		std::vector<User*>::iterator itr;
-		for (itr=begin(this->_userLogList); itr != end(this->_userLogList); itr++)
+		for (itr=this->_userLogList.begin(); itr != this->_userLogList.end(); itr++)
 		{
 			if(_nick == (*itr)->getNick())
 				return(*itr);
@@ -134,7 +172,7 @@ User*	Channel::isUserinChannelbys(std::string _nick)
 User*	Channel::isUserinChannelbyp(User* user)
 {
 		std::vector<User*>::iterator itr;
-		for (itr=begin(this->_userLogList); itr != end(this->_userLogList); itr++)
+		for (itr=this->_userLogList.begin(); itr != this->_userLogList.end(); itr++)
 		{
 			if(user == *itr)
 				return(*itr);
@@ -142,14 +180,13 @@ User*	Channel::isUserinChannelbyp(User* user)
 		return (NULL);
 }
 
-
 /* Not Needed anymore, Use Channel::isUserinChannel */
 int		Channel::ifJoined(std::string _nick)
 {
 		std::string str;
 
 		std::vector<User*>::iterator itr;
-		for (itr=begin(this->_userLogList); itr != end(this->_userLogList); itr++)
+		for (itr=this->_userLogList.begin(); itr != this->_userLogList.end(); itr++)
 		{
 			if(_nick == (*itr)->getNick())
 				return(1);
@@ -163,19 +200,12 @@ int		Channel::ifJoined(std::string _nick)
 /* Finds a User Obj Pointer from the _userLogList return 1 or 0 */
 int		Channel::is_User_Operator(User* user)
 {
-
-
-
-	// Protection: Check if the _userLogList is empty   Not Needed Now!!!
-	/* if (this->_channelList.size() == 0)
-	{
-
+	// Protection: Check if the _userLogList is empty
+	/* if (this->_channelList.size() == 0) {
 		return;
 	} */
-
 		std::vector<User*>::iterator itr;
-		for (itr=begin(this->_userLogList); itr != end(this->_userLogList); itr++)
-
+		for (itr=this->_operatorList.begin(); itr != this->_operatorList.end(); itr++)
 		{
 			if(user == *itr)
 				return(1);
@@ -184,34 +214,27 @@ int		Channel::is_User_Operator(User* user)
 }
 
 
-
-
-
-/*    Not Checked   */
+		/*    Utilities   */
 //=====================================================================
-//=====================================================================
-std::string	Channel::findAllUsers() {
-		std::string str;
 
-		std::vector<User*>::iterator itr;
-		for (itr = begin(this->_userLogList); itr != end(this->_userLogList); itr++)
-		{
-			//std::cout << "Found user in channel list: " << (*itr)->getNick() << std::endl;
-			if (this->ifOperator((*itr)->getNick()) == 1) {
-				str += '@';
-			}
-			std::string temp = (*itr)->getNick();
-			str += temp + " ";
-			// temp.clear();
+std::string	Channel::findAllUsers()
+{
+	std::string str;
+	std::vector<User*>::iterator itr;
+	for (itr = this->_userLogList.begin(); itr != this->_userLogList.end(); itr++)
+	{
+		if (this->ifOperator((*itr)->getNick()) == 1) {
+			str += '@';
 		}
-		// std::cout << "String from all users is: " << str << std::endl;
-		return (str);
+		std::string temp = (*itr)->getNick();
+		str += temp + " ";
+	}
+	return (str);
 }
-
 
 bool	Channel::ifBanned(User* ifBan) {
 	std::vector<User*>::iterator itr;
-	for (itr=begin(this->_bannedList); itr != end(this->_bannedList); itr++) {
+	for (itr=this->_bannedList.begin(); itr != this->_bannedList.end(); itr++) {
 		if ((char *)ifBan->getHost() == *(*itr)->getHost())
 			return true;
 	}
@@ -219,12 +242,12 @@ bool	Channel::ifBanned(User* ifBan) {
 	return false;
 }
 
-int		Channel::ifOperator(std::string _nick)
+int	Channel::ifOperator(std::string _nick)
 {
 		std::string str;
 
 		std::vector<User*>::iterator itr;
-		for (itr=begin(this->_operatorList); itr != end(this->_operatorList); itr++)
+		for (itr=this->_operatorList.begin(); itr != this->_operatorList.end(); itr++)
 		{
 			if(_nick == (*itr)->getNick())
 				return(1);
@@ -232,67 +255,31 @@ int		Channel::ifOperator(std::string _nick)
 		return (0);
 }
 
-
-/* bool	Channel::ifIsOperator(User* checkUser)
-{
-	std::vector<User *>::iterator itr = ::find(_operatorList.begin(), _operatorList.end(), checkUser);
-	if (itr != _operatorList.end())
-		return true;
-	return false;
-} */
-
-
-// commented out for adding new iterator and testing, 23.02.
-/* User*	Channel::get_user_if_in( std::string& _nick)
-{
-	std::vector<User *>::iterator start = this->_userLogList.begin();
-	std::vector<User *>::iterator end = this->_userLogList.end();
-	std::string *test = _nick;
-
-	while (start != end)
-	{
-		if ((*start)->getNick()->compare(test) == 0)
-		{
-			std::cout << (*start)->testing << std::endl;
-			return ((*start));
-		}
-		start++;
-	}
-	return (NULL);
-} */
-
-
-
-// Currently commented out for bugfixing: has to be revisited 
-/* void Channel::notify_others(const std::string& msg, User* skip)
-{
-	std::vector<User*>::iterator start = this->_userLogList.begin();
-	std::vector<User*>::iterator end = this->_userLogList.end();
-
-	while (start != end)
-	{
-		if ((*start)->getNick()->compare(*skip->getNick()) == 0)
-		{
-			continue;
-		}
-		(*start)->reply(msg.c_str());
-		start++;
-	}
-}  */
-
-  
-  
-  
-  
 void Channel::notify_others(std::string cmd_name, const std::string& msg, User* skip)
 {
 	std::string tosend = ":" + skip->getPrefix() + " " + cmd_name + " " + this->getName() + " " + msg;
 
 	std::vector<User*>::iterator itr;
-	for (itr=begin(this->_userLogList); itr != end(this->_userLogList); itr++) {
+	for (itr=this->_userLogList.begin(); itr != this->_userLogList.end(); itr++) {
 		if (skip->getNick() != (*itr)->getNick())
 			(*itr)->replyLight(tosend.c_str());
 	}
 }
+
+void Channel::deleteOperator(User* target)
+{
+	std::vector<User*>::iterator start = this->_operatorList.begin();
+	std::vector<User*>::iterator end = this->_operatorList.end();
+	while (start != end)
+	{
+		if (target->getNick() == (*start)->getNick())
+		{
+			this->_operatorList.erase(start);
+			return;
+		}
+		start++;
+	}
+}
+
 
 
